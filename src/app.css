@@ -8,6 +8,7 @@
 	--color-bg-0: #0a0a0a;
 	--color-bg-1: #1a1a1a;
 	--color-bg-2: #2a2a2a;
+	--color-bg-game: #0a0a0a;
 	--color-theme-1: #f5f5dc;
 	--color-theme-2: #d4c5a9;
 	--color-text: rgba(245, 245, 220, 0.9);
@@ -20,7 +21,7 @@
 body {
 	min-height: 100vh;
 	margin: 0;
-	background-color: var(--color-bg-0);
+	background-color: var(--color-bg-game);
 	overflow-x: hidden;
 }
 
@@ -70,6 +71,7 @@ pre {
 	flex-direction: column;
 	justify-content: center;
 	margin: 0 auto;
+	pointer-events: auto;
 }
 
 input,

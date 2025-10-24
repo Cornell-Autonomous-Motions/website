@@ -5,8 +5,14 @@
 	let canvas: HTMLCanvasElement;
 
 	onMount(() => {
+		// Read background color from CSS variable
+		const bgColorStr = getComputedStyle(document.documentElement)
+			.getPropertyValue('--color-bg-game')
+			.trim();
+		const BACKGROUND_COLOR = parseInt(bgColorStr.replace('#', ''), 16);
+		
 		// Configuration
-		const CELL_SIZE = 20; // Larger cells for more visual presence
+		const CELL_SIZE = 15; // Larger cells for more visual presence
 		const BIRTH_PROBABILITY = 0.1; // Low probability for subtle start
 		const UPDATE_INTERVAL = 1250; // Slower updates (ms)
 		const SLIDE_SPEED = 0.1; // Speed of slide transitions (higher = faster, closer to linear)
@@ -15,7 +21,6 @@
 		const MOUSE_SPAWN_PROBABILITY = 0.5; // Probability of spawning cell near mouse
 		const CELL_COLOR = 0xA2998B; // Cream/beige color
 		const FIXED_CELL_COLOR = 0xe13737; // Red color for CAM text
-		const BACKGROUND_COLOR = 0x222222; // Very dark background
 
 		// Initialize PixiJS Application
 		const app = new PIXI.Application();
@@ -33,24 +38,35 @@
 		let targetOffsetY: number[][] = []; // Target Y offset
 		let targetAlpha: number[][] = []; // Target alpha for fading
 		let hoverHighlight: PIXI.Graphics; // Highlight for cell under mouse
+		let isDragging = false; // Track if mouse is being dragged
 
 		async function init() {
+			const canvasHeight = window.innerHeight * 1.2;
+			
 			await app.init({
 				canvas,
 				backgroundColor: BACKGROUND_COLOR,
-				resizeTo: window,
+				width: window.innerWidth,
+				height: canvasHeight,
 				antialias: true,
 				resolution: window.devicePixelRatio || 1
 			});
 
-			// Calculate grid dimensions
-			cols = Math.ceil(app.screen.width / CELL_SIZE);
-			rows = Math.ceil(app.screen.height / CELL_SIZE);
+			// Calculate grid dimensions based on extended canvas
+			cols = Math.ceil(window.innerWidth / CELL_SIZE);
+			rows = Math.ceil(canvasHeight / CELL_SIZE);
 
 			// Initialize grids
 			initializeGrids();
+			
+			// Run several iterations before displaying to avoid showing the ugly spawn frame
+			for (let i = 0; i < 8; i++) {
+				updateGameOfLife();
+			}
+			
 			createCellGraphics();
 			createCAMText();
+			createArrow();
 			
 			// Create hover highlight (add it last so it's on top)
 			hoverHighlight = new PIXI.Graphics();
@@ -182,8 +198,9 @@
 				[1,0,0,0,1]
 			];
 			
-			// Calculate center position for the text
-			const centerRow = Math.floor(rows / 2) - 3; // Center vertically (7 tall / 2)
+			// Calculate center position based on viewport height, not total canvas height
+			const viewportRows = Math.ceil(window.innerHeight / CELL_SIZE);
+			const centerRow = Math.floor(viewportRows / 2) - 3; // Center vertically in viewport (7 tall / 2)
 			const letterSpacing = 2; // Space between letters
 			const totalWidth = 5 + letterSpacing + 5 + letterSpacing + 5; // 3 letters with spacing
 			const centerCol = Math.floor(cols / 2) - Math.floor(totalWidth / 2);
@@ -225,6 +242,37 @@
 					if (letterM[i][j] === 1) {
 						const row = centerRow + i;
 						const col = currentCol + j;
+						if (row >= 0 && row < rows && col >= 0 && col < cols) {
+							fixedCells[row][col] = true;
+							fixedCellGraphics[row][col].visible = true;
+						}
+					}
+				}
+			}
+		}
+		
+		function createArrow() {
+			// Down arrow pattern (9 rows x 7 cols)
+			const downArrow = [
+				[0,0,0,1,0,0,0],
+				[0,0,0,1,0,0,0],
+				[0,0,0,1,0,0,0],
+				[0,1,0,1,0,1,0],
+				[0,0,1,1,1,0,0],
+				[0,0,0,1,0,0,0]
+			];
+			
+			// Position arrow at bottom center of screen (based on viewport height)
+			const viewportRows = Math.ceil(window.innerHeight / CELL_SIZE);
+			const arrowRow = viewportRows - 12; // 12 cells from bottom of viewport
+			const centerCol = Math.floor(cols / 2) - 3; // Center horizontally (7 wide / 2)
+			
+			// Place arrow
+			for (let i = 0; i < downArrow.length; i++) {
+				for (let j = 0; j < downArrow[i].length; j++) {
+					if (downArrow[i][j] === 1) {
+						const row = arrowRow + i;
+						const col = centerCol + j;
 						if (row >= 0 && row < rows && col >= 0 && col < cols) {
 							fixedCells[row][col] = true;
 							fixedCellGraphics[row][col].visible = true;
@@ -419,8 +467,12 @@
 				hoverHighlight.visible = true;
 				hoverHighlight.zIndex = 1000;
 				
-				// Spawn cells with probability (but not on fixed cells)
-				if (Math.random() < MOUSE_SPAWN_PROBABILITY && !currentGrid[row][col] && !fixedCells[row][col]) {
+				// If dragging, spawn circles continuously
+				if (isDragging) {
+					spawnCircleAt(col, row);
+				}
+				// Otherwise spawn cells with probability (but not on fixed cells)
+				else if (Math.random() < MOUSE_SPAWN_PROBABILITY && !currentGrid[row][col] && !fixedCells[row][col]) {
 					// Spawn a new cell with birth animation
 					currentGrid[row][col] = true;
 					const direction = getNeighborDirection(row, col);
@@ -437,6 +489,63 @@
 			} else {
 				hoverHighlight.visible = false;
 			}
+		}
+		
+		// Spawn circle of cells at given position
+		function spawnCircleAt(col: number, row: number) {
+			if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+			
+			const radius = 2; // Circle radius in cells
+			
+			// Spawn cells in a circular pattern
+			for (let i = -radius; i <= radius; i++) {
+				for (let j = -radius; j <= radius; j++) {
+					const distance = Math.sqrt(i * i + j * j);
+					
+					// Only spawn if within circle radius
+					if (distance <= radius) {
+						const targetRow = (row + i + rows) % rows;
+						const targetCol = (col + j + cols) % cols;
+						
+						// Don't spawn on fixed cells or cells that are already alive
+						if (!fixedCells[targetRow][targetCol] && !currentGrid[targetRow][targetCol]) {
+							currentGrid[targetRow][targetCol] = true;
+							
+							// Calculate direction from center of circle for animation
+							const magnitude = Math.sqrt(i * i + j * j);
+							const dx = magnitude > 0 ? i / magnitude : 0;
+							const dy = magnitude > 0 ? j / magnitude : 0;
+							
+							const slideDistance = CELL_SIZE * 0.8;
+							cellOffsetX[targetRow][targetCol] = -dx * slideDistance;
+							cellOffsetY[targetRow][targetCol] = -dy * slideDistance;
+							targetOffsetX[targetRow][targetCol] = 0;
+							targetOffsetY[targetRow][targetCol] = 0;
+							targetAlpha[targetRow][targetCol] = 1;
+							
+							cellGraphics[targetRow][targetCol].visible = true;
+						}
+					}
+				}
+			}
+		}
+		
+		// Handle mouse down to start dragging
+		function handleMouseDown(event: MouseEvent) {
+			isDragging = true;
+			const rect = canvas.getBoundingClientRect();
+			const mouseX = event.clientX - rect.left;
+			const mouseY = event.clientY - rect.top;
+			
+			const col = Math.floor(mouseX / CELL_SIZE);
+			const row = Math.floor(mouseY / CELL_SIZE);
+			
+			spawnCircleAt(col, row);
+		}
+		
+		// Handle mouse up to stop dragging
+		function handleMouseUp() {
+			isDragging = false;
 		}
 		
 		// Handle mouse click to spawn a circle of cells
@@ -490,6 +599,8 @@
 		}
 
 		window.addEventListener('resize', handleResize);
+		canvas.addEventListener('mousedown', handleMouseDown);
+		canvas.addEventListener('mouseup', handleMouseUp);
 		canvas.addEventListener('mousemove', handleMouseMove);
 		canvas.addEventListener('click', handleMouseClick);
 		canvas.addEventListener('mouseleave', handleMouseLeave);
@@ -498,6 +609,8 @@
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			canvas.removeEventListener('mousedown', handleMouseDown);
+			canvas.removeEventListener('mouseup', handleMouseUp);
 			canvas.removeEventListener('mousemove', handleMouseMove);
 			canvas.removeEventListener('click', handleMouseClick);
 			canvas.removeEventListener('mouseleave', handleMouseLeave);
@@ -506,16 +619,42 @@
 	});
 </script>
 
-<canvas bind:this={canvas} class="game-of-life-canvas"></canvas>
+<div class="canvas-container">
+	<canvas bind:this={canvas} class="game-of-life-canvas"></canvas>
+	<div class="fade-overlay"></div>
+</div>
 
 <style>
-	.game-of-life-canvas {
-		position: fixed;
+	.canvas-container {
+		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100vw;
-		height: 100vh;
+		height: 120vh;
 		z-index: 0;
+	}
+
+	.game-of-life-canvas {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
 		pointer-events: all;
+	}
+
+	.fade-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 50vh;
+		background: linear-gradient(to bottom, 
+			transparent 0%, 
+			rgb(from var(--color-bg-game) r g b / 0.3) 40%,
+			rgb(from var(--color-bg-game) r g b / 0.7) 70%,
+			var(--color-bg-game) 100%);
+		pointer-events: none;
+		z-index: 1;
 	}
 </style>
