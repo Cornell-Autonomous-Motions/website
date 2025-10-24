@@ -1,35 +1,78 @@
+<script lang="ts">
+	import GameOfLife from '$lib/GameOfLife.svelte';
+</script>
+
 <section id="footer" class="footer-section">
+	<div class="bottom-game-of-life">
+		<GameOfLife height="50vh" showCAMText={false} enableInteractions={true} />
+		<div class="bottom-fade-overlay"></div>
+	</div>
 	<div class="footer-content">
-		<h3>Get In Touch</h3>
-		<p>Interested in autonomous systems or want to join our team?</p>
-		<a href="mailto:cornellautonomousmotions@gmail.com" class="email-link">
-			cornellautonomousmotions@gmail.com
-		</a>
-		<div class="footer-bottom">
-			<p>&copy; {new Date().getFullYear()} Cornell Autonomous Motions</p>
-		</div>
+		<h2>Contact Us</h2>
+		<p>
+			Interested in autonomous systems or want to join our team?<br>
+			<a href="mailto:cornellautonomousmotions@gmail.com" class="email-link">
+				cornellautonomousmotions@gmail.com
+			</a>
+		</p>
+	</div>
+	<div class="footer-bottom">
+		<p>&copy; {new Date().getFullYear()} Cornell Autonomous Motions</p>
 	</div>
 </section>
 
 <style>
 	.footer-section {
 		position: relative;
-		background-color: var(--color-bg-game);
+		background-color: transparent;
 		color: #A2998B;
-		padding: 4rem 2rem 2rem;
+		padding: 4rem 2rem 0;
 		z-index: 2;
-		border-top: 2px solid rgba(162, 153, 139, 0.2);
+		height: 60vh;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+	}
+
+	.bottom-game-of-life {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 35vh;
+		z-index: 0;
+		pointer-events: none;
+	}
+
+	.bottom-fade-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(to top, 
+			transparent 0%,
+			transparent 30%,
+			rgb(from var(--color-bg-game) r g b / 0.3) 55%,
+			rgb(from var(--color-bg-game) r g b / 0.6) 70%,
+			rgb(from var(--color-bg-game) r g b / 0.85) 85%,
+			var(--color-bg-game) 100%);
+		pointer-events: none;
+		z-index: 1;
 	}
 
 	.footer-content {
+		position: relative;
 		max-width: 800px;
 		margin: 0 auto;
-		text-align: center;
+		z-index: 10;
+		width: 100%;
 	}
 
-	.footer-content h3 {
+	.footer-content h2 {
 		color: #e13737;
-		font-size: 2.5rem;
+		font-size: 5rem;
+		margin-top: 0;
 		margin-bottom: 1rem;
 		font-family: 'Bitcount Grid Single', monospace;
 	}
@@ -42,46 +85,35 @@
 	}
 
 	.email-link {
-		display: inline-block;
 		color: #e13737;
-		text-decoration: none;
-		font-size: 1.25rem;
+		text-decoration: underline;
 		font-family: monospace;
-		padding: 0.75rem 1.5rem;
-		border: 2px solid #e13737;
-		border-radius: 8px;
-		transition: all 0.3s ease;
-		margin-bottom: 2rem;
+		transition: opacity 0.2s ease;
 	}
 
 	.email-link:hover {
-		background-color: #e13737;
-		color: var(--color-bg-game);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(225, 55, 55, 0.3);
+		opacity: 0.7;
 	}
 
 	.footer-bottom {
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid rgba(162, 153, 139, 0.2);
+		position: relative;
+		z-index: 10;
+		text-align: center;
+		padding-bottom: 0.5rem;
+		margin-top: auto;
 	}
 
 	.footer-bottom p {
 		font-size: 0.875rem;
 		color: rgba(162, 153, 139, 0.6);
 		margin: 0;
+		font-family: monospace;
 	}
 
 	/* Responsive design */
 	@media (max-width: 768px) {
-		.footer-content h3 {
+		.footer-content h2 {
 			font-size: 2rem;
-		}
-
-		.email-link {
-			font-size: 1rem;
-			padding: 0.5rem 1rem;
 		}
 	}
 </style>

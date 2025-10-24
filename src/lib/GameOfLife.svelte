@@ -2,6 +2,18 @@
 	import { onMount } from 'svelte';
 	import * as PIXI from 'pixi.js';
 
+	interface Props {
+		height?: string;
+		showCAMText?: boolean;
+		enableInteractions?: boolean;
+	}
+
+	let { 
+		height = "120vh", 
+		showCAMText = true, 
+		enableInteractions = true 
+	}: Props = $props();
+
 	let canvas: HTMLCanvasElement;
 
 	onMount(() => {
@@ -41,7 +53,9 @@
 		let isDragging = false; // Track if mouse is being dragged
 
 		async function init() {
-			const canvasHeight = window.innerHeight * 1.2;
+			// Parse height prop (e.g., "120vh" -> 1.2, "40vh" -> 0.4)
+			const heightMultiplier = parseFloat(height.replace('vh', '')) / 100;
+			const canvasHeight = window.innerHeight * heightMultiplier;
 			
 			await app.init({
 				canvas,
@@ -65,15 +79,21 @@
 			}
 			
 			createCellGraphics();
-			createCAMText();
-			createArrow();
 			
-			// Create hover highlight (add it last so it's on top)
-			hoverHighlight = new PIXI.Graphics();
-			hoverHighlight.visible = false;
-			hoverHighlight.zIndex = 1000; // Ensure it's on top
-			app.stage.addChild(hoverHighlight);
-			app.stage.sortableChildren = true;
+			// Conditionally create CAM text and arrow
+			if (showCAMText) {
+				createCAMText();
+				createArrow();
+			}
+			
+			// Create hover highlight only if interactions are enabled
+			if (enableInteractions) {
+				hoverHighlight = new PIXI.Graphics();
+				hoverHighlight.visible = false;
+				hoverHighlight.zIndex = 1000; // Ensure it's on top
+				app.stage.addChild(hoverHighlight);
+				app.stage.sortableChildren = true;
+			}
 			
 			// Start the game loop
 			let lastUpdate = Date.now();
@@ -599,29 +619,36 @@
 		}
 
 		window.addEventListener('resize', handleResize);
-		canvas.addEventListener('mousedown', handleMouseDown);
-		canvas.addEventListener('mouseup', handleMouseUp);
-		canvas.addEventListener('mousemove', handleMouseMove);
-		canvas.addEventListener('click', handleMouseClick);
-		canvas.addEventListener('mouseleave', handleMouseLeave);
+		
+		// Conditionally add mouse interaction listeners
+		if (enableInteractions) {
+			canvas.addEventListener('mousedown', handleMouseDown);
+			canvas.addEventListener('mouseup', handleMouseUp);
+			canvas.addEventListener('mousemove', handleMouseMove);
+			canvas.addEventListener('click', handleMouseClick);
+			canvas.addEventListener('mouseleave', handleMouseLeave);
+		}
 
 		init();
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
-			canvas.removeEventListener('mousedown', handleMouseDown);
-			canvas.removeEventListener('mouseup', handleMouseUp);
-			canvas.removeEventListener('mousemove', handleMouseMove);
-			canvas.removeEventListener('click', handleMouseClick);
-			canvas.removeEventListener('mouseleave', handleMouseLeave);
+			
+			if (enableInteractions) {
+				canvas.removeEventListener('mousedown', handleMouseDown);
+				canvas.removeEventListener('mouseup', handleMouseUp);
+				canvas.removeEventListener('mousemove', handleMouseMove);
+				canvas.removeEventListener('click', handleMouseClick);
+				canvas.removeEventListener('mouseleave', handleMouseLeave);
+			}
+			
 			app.destroy(true, { children: true });
 		};
 	});
 </script>
 
-<div class="canvas-container">
+<div class="canvas-container" style="--canvas-height: {height}">
 	<canvas bind:this={canvas} class="game-of-life-canvas"></canvas>
-	<div class="fade-overlay"></div>
 </div>
 
 <style>
@@ -630,7 +657,7 @@
 		top: 0;
 		left: 0;
 		width: 100vw;
-		height: 120vh;
+		height: var(--canvas-height, 120vh);
 		z-index: 0;
 	}
 
@@ -641,20 +668,5 @@
 		width: 100%;
 		height: 100%;
 		pointer-events: all;
-	}
-
-	.fade-overlay {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		width: 100%;
-		height: 50vh;
-		background: linear-gradient(to bottom, 
-			transparent 0%, 
-			rgb(from var(--color-bg-game) r g b / 0.3) 40%,
-			rgb(from var(--color-bg-game) r g b / 0.7) 70%,
-			var(--color-bg-game) 100%);
-		pointer-events: none;
-		z-index: 1;
 	}
 </style>

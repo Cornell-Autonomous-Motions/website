@@ -35,7 +35,6 @@
 <style>
 	.content-section {
 		position: relative;
-		margin-top: 120vh;
 		background-color: var(--color-bg-game);
 		color: #A2998B;
 		padding: 4rem 2rem;
