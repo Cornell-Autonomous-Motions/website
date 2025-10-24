@@ -451,20 +451,92 @@
 
 		// Handle window resize
 		function handleResize() {
-			const newCols = Math.ceil(app.screen.width / CELL_SIZE);
-			const newRows = Math.ceil(app.screen.height / CELL_SIZE);
+			// Calculate new canvas dimensions
+			const heightMultiplier = parseFloat(height.replace('vh', '')) / 100;
+			const newCanvasHeight = window.innerHeight * heightMultiplier;
+			const newCanvasWidth = window.innerWidth;
+			
+			// Resize the PixiJS renderer
+			app.renderer.resize(newCanvasWidth, newCanvasHeight);
+			
+			// Calculate new grid dimensions
+			const newCols = Math.ceil(newCanvasWidth / CELL_SIZE);
+			const newRows = Math.ceil(newCanvasHeight / CELL_SIZE);
 			
 			if (newCols !== cols || newRows !== rows) {
-				// Clear old graphics
+				// Save the old grid state
+				const oldCurrentGrid = currentGrid;
+				const oldNextGrid = nextGrid;
+				const oldFixedCells = fixedCells;
+				const oldCellOffsetX = cellOffsetX;
+				const oldCellOffsetY = cellOffsetY;
+				const oldTargetOffsetX = targetOffsetX;
+				const oldTargetOffsetY = targetOffsetY;
+				const oldTargetAlpha = targetAlpha;
+				const oldCols = cols;
+				const oldRows = rows;
+				
+				// Clear old graphics (both regular and fixed cells)
 				cellGraphics.flat().forEach(cell => cell.destroy());
+				fixedCellGraphics.flat().forEach(cell => cell.destroy());
 				
 				// Update dimensions
 				cols = newCols;
 				rows = newRows;
 				
-				// Reinitialize
-				initializeGrids();
+				// Initialize new grids with default values
+				currentGrid = [];
+				nextGrid = [];
+				fixedCells = [];
+				cellOffsetX = [];
+				cellOffsetY = [];
+				targetOffsetX = [];
+				targetOffsetY = [];
+				targetAlpha = [];
+				
+				for (let i = 0; i < rows; i++) {
+					currentGrid[i] = [];
+					nextGrid[i] = [];
+					fixedCells[i] = [];
+					cellOffsetX[i] = [];
+					cellOffsetY[i] = [];
+					targetOffsetX[i] = [];
+					targetOffsetY[i] = [];
+					targetAlpha[i] = [];
+					for (let j = 0; j < cols; j++) {
+						// Copy old state if within old bounds, otherwise initialize randomly
+						if (i < oldRows && j < oldCols) {
+							// Preserve existing state
+							currentGrid[i][j] = oldCurrentGrid[i][j];
+							nextGrid[i][j] = oldNextGrid[i][j];
+							fixedCells[i][j] = oldFixedCells[i][j];
+							cellOffsetX[i][j] = oldCellOffsetX[i][j];
+							cellOffsetY[i][j] = oldCellOffsetY[i][j];
+							targetOffsetX[i][j] = oldTargetOffsetX[i][j];
+							targetOffsetY[i][j] = oldTargetOffsetY[i][j];
+							targetAlpha[i][j] = oldTargetAlpha[i][j];
+						} else {
+							// Initialize new cells with random state (for expanded area)
+							currentGrid[i][j] = Math.random() < BIRTH_PROBABILITY;
+							nextGrid[i][j] = false;
+							fixedCells[i][j] = false;
+							cellOffsetX[i][j] = 0;
+							cellOffsetY[i][j] = 0;
+							targetOffsetX[i][j] = 0;
+							targetOffsetY[i][j] = 0;
+							targetAlpha[i][j] = currentGrid[i][j] ? 1 : 0;
+						}
+					}
+				}
+				
+				// Recreate graphics
 				createCellGraphics();
+				
+				// Recreate CAM text and arrow if enabled
+				if (showCAMText) {
+					createCAMText();
+					createArrow();
+				}
 			}
 		}
 
