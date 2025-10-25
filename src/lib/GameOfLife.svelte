@@ -33,7 +33,6 @@
 		const MOUSE_SPAWN_PROBABILITY = 0.5; // Probability of spawning cell near mouse
 		const CELL_COLOR = 0xA2998B; // Cream/beige color
 		const FIXED_CELL_COLOR = 0xe13737; // Red color for CAM text
-
 		// Initialize PixiJS Application
 		const app = new PIXI.Application();
 
@@ -84,6 +83,7 @@
 			if (showCAMText) {
 				createCAMText();
 				createArrow();
+				markSurroundingCellsAsFixed();
 			}
 			
 			// Create hover highlight only if interactions are enabled
@@ -296,6 +296,42 @@
 						if (row >= 0 && row < rows && col >= 0 && col < cols) {
 							fixedCells[row][col] = true;
 							fixedCellGraphics[row][col].visible = true;
+						}
+					}
+				}
+			}
+		}
+		
+		function markSurroundingCellsAsFixed() {
+			// Create a copy of the current fixed cells to avoid modifying while iterating
+			const fixedCellsCopy: boolean[][] = [];
+			for (let i = 0; i < rows; i++) {
+				fixedCellsCopy[i] = [...fixedCells[i]];
+			}
+			
+			// For each fixed cell, mark all 8 surrounding cells as fixed (but not visible)
+			for (let i = 0; i < rows; i++) {
+				for (let j = 0; j < cols; j++) {
+					if (fixedCellsCopy[i][j]) {
+						// Mark all 8 neighbors as fixed
+						for (let di = -1; di <= 1; di++) {
+							for (let dj = -1; dj <= 1; dj++) {
+								if (di === 0 && dj === 0) continue; // Skip the cell itself
+								
+								const neighborRow = i + di;
+								const neighborCol = j + dj;
+								
+								// Check bounds
+								if (neighborRow >= 0 && neighborRow < rows && neighborCol >= 0 && neighborCol < cols) {
+									// Mark as fixed but don't make it visible (no red cell)
+									if (!fixedCells[neighborRow][neighborCol]) {
+										fixedCells[neighborRow][neighborCol] = true;
+										// Keep current grid cell dead if it's a buffer cell
+										currentGrid[neighborRow][neighborCol] = false;
+										targetAlpha[neighborRow][neighborCol] = 0;
+									}
+								}
+							}
 						}
 					}
 				}
@@ -536,6 +572,7 @@
 				if (showCAMText) {
 					createCAMText();
 					createArrow();
+					markSurroundingCellsAsFixed();
 				}
 			}
 		}

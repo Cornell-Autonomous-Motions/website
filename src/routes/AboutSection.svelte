@@ -2,7 +2,33 @@
 	import camLogo from '$lib/images/CAM-logo.png';
 	import autobike from '$lib/images/autobike.png';
 	import lidar from '$lib/images/lidar.jpeg';
+	import placeholder from '$lib/images/placeholder.png';
+
+	let selectedIndex = -1;
+
+	function selectImage(index: number) {
+		selectedIndex = selectedIndex === index ? -1 : index;
+	}
+
+	function handleKeydown(event: KeyboardEvent, index: number) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			selectImage(index);
+		}
+	}
+
+	function handleGridLeave() {
+		selectedIndex = -1;
+	}
+
+	function handleEscapeKey(event: KeyboardEvent) {
+		if (event.key === 'Escape' && selectedIndex !== -1) {
+			selectedIndex = -1;
+		}
+	}
 </script>
+
+<svelte:window on:keydown={handleEscapeKey} />
 
 <section id="about" class="content-section">
 	<div class="content-wrapper">
@@ -16,18 +42,54 @@
 		</p>
 	</div>
 	
-	<div class="image-grid">
-		<div class="image-card tilt-left">
+	<div 
+		class="image-grid" 
+		class:has-selection={selectedIndex !== -1}
+		on:mouseleave={handleGridLeave}
+	>
+		<div 
+			class="image-card tilt-left" 
+			class:selected={selectedIndex === 0}
+			on:click={() => selectImage(0)}
+			on:keydown={(e) => handleKeydown(e, 0)}
+			role="button"
+			tabindex="0"
+		>
 			<img src={camLogo} alt="CAM Logo" />
 			<div class="caption">Our Team Logo</div>
 		</div>
-		<div class="image-card tilt-right">
+		<div 
+			class="image-card tilt-right" 
+			class:selected={selectedIndex === 1}
+			on:click={() => selectImage(1)}
+			on:keydown={(e) => handleKeydown(e, 1)}
+			role="button"
+			tabindex="0"
+		>
 			<img src={autobike} alt="Autobike" />
 			<div class="caption">Autonomous Bike Project</div>
 		</div>
-		<div class="image-card tilt-slight">
+		<div 
+			class="image-card tilt-slight" 
+			class:selected={selectedIndex === 2}
+			on:click={() => selectImage(2)}
+			on:keydown={(e) => handleKeydown(e, 2)}
+			role="button"
+			tabindex="0"
+		>
 			<img src={lidar} alt="Lidar sensor" />
 			<div class="caption">LiDAR Sensor Technology</div>
+		</div>
+		<div 
+			class="image-card tilt-slight" 
+			class:selected={selectedIndex === 3}
+			on:click={() => selectImage(3)}
+			on:keydown={(e) => handleKeydown(e, 3)}
+			role="button"
+			tabindex="0"
+		>
+			<img src={placeholder} alt="Lidar sensor" />
+			<div class="caption">Placeholder</div>
 		</div>
 	</div>
 </section>
@@ -87,18 +149,35 @@
 		width: 300px;
 	}
 
-	.image-card:nth-child(1) {
-		z-index: 1;
+	/* All cards except first get negative margin for overlap */
+	.image-card:not(:first-child) {
+		margin-left: -15px;
+		transition: all 0.4s ease;
 	}
 
-	.image-card:nth-child(2) {
-		z-index: 2;
-		margin-left: -15px;
+	/* Spread apart when hovering anywhere over the grid */
+	.image-grid:hover .image-card:not(:first-child) {
+		margin-left: 40px;
 	}
 
-	.image-card:nth-child(3) {
-		z-index: 3;
-		margin-left: -15px;
+	/* When a card is selected */
+	.image-grid.has-selection .image-card:not(.selected) {
+		opacity: 0.3;
+		transform: scale(0.85);
+		filter: blur(2px);
+	}
+
+	.image-grid.has-selection .image-card.selected {
+		transform: translateY(-20px) scale(1.2) !important;
+		z-index: 999;
+		opacity: 1;
+		filter: none;
+	}
+
+	.image-grid.has-selection .image-card.selected .caption {
+		opacity: 1;
+		bottom: -3rem;
+		font-size: 1.25rem;
 	}
 
 	.image-card:hover {
