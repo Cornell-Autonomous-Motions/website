@@ -1,4 +1,6 @@
 <script lang="ts">
+	import camLogo from '$lib/images/CAM-logo-small.png';
+
 	function scrollToAbout(e: MouseEvent) {
 		e.preventDefault();
 		const aboutSection = document.getElementById('about');
@@ -18,9 +20,14 @@
 
 <header>
 	<nav>
-		<a href="#about" on:click={scrollToAbout}>About</a>
-		<a href="https://github.com/da-luce/cam_website" target="_blank" rel="noopener noreferrer">GitHub</a>
-		<a href="#footer" on:click={scrollToFooter}>Contact</a>
+		<a href="/" class="logo-link">
+			<img src={camLogo} alt="CAM Logo" class="logo" />
+		</a>
+		<div class="nav-links">
+			<a href="#about" on:click={scrollToAbout}>About</a>
+			<a href="https://github.com/da-luce/cam_website" target="_blank" rel="noopener noreferrer">GitHub</a>
+			<a href="#footer" on:click={scrollToFooter}>Contact</a>
+		</div>
 	</nav>
 </header>
 
@@ -42,14 +49,34 @@
 
 	nav {
 		display: flex;
-		justify-content: center;
+		justify-content: space-between;
 		align-items: center;
-		gap: 3rem;
 		max-width: 1200px;
 		margin: 0 auto;
 	}
 
-	nav a {
+	.logo-link {
+		display: flex;
+		align-items: center;
+		transition: opacity 0.2s ease;
+	}
+
+	.logo-link:hover {
+		opacity: 0.7;
+	}
+
+	.logo {
+		height: 40px;
+		width: auto;
+	}
+
+	.nav-links {
+		display: flex;
+		gap: 3rem;
+		align-items: center;
+	}
+
+	.nav-links a {
 		color: #e13737;
 		text-decoration: none;
 		font-size: 1rem;
@@ -57,7 +84,7 @@
 		transition: opacity 0.2s ease;
 	}
 
-	nav a:hover {
+	.nav-links a:hover {
 		opacity: 0.7;
 	}
 </style>
