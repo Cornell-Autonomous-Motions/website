@@ -88,8 +88,8 @@
 			role="button"
 			tabindex="0"
 		>
-			<img src={placeholder} alt="Lidar sensor" />
-			<div class="caption">Placeholder</div>
+			<img src={placeholder} alt="Placeholder" />
+			<div class="caption">CAD Model</div>
 		</div>
 	</div>
 </section>
