@@ -136,6 +136,7 @@
 		margin: 3rem auto;
 		padding: 2rem 4rem;
 		max-width: 1600px;
+		font-family: monospace;
 	}
 
 	.image-card {
